@@ -1,0 +1,60 @@
+user: justinstimatze
+
+defaults:
+  fork_relation: own
+  tier: active
+
+# This file contains only public-repo entries so it can be committed safely.
+# Private repos live in vidette.local.yml (gitignored, merged at load).
+
+repos:
+  # Forks / tracking — keep up with upstream, don't push back
+  gastown:
+    fork_relation: tracking
+    tier: maintained
+    notes: "keep up to date with upstream; don't push back"
+  buddy:
+    fork_relation: tracking
+    tier: active
+    notes: "buddy MCP companion; track upstream, layer local"
+  awesome-mcp-servers:
+    fork_relation: snapshot
+    tier: scratch
+    notes: "tentative — confirm classification"
+
+  # Fork-as-credit rewrite — full hygiene applies
+  gozim:
+    fork_relation: rewritten
+    tier: active
+    notes: "fork-as-credit; full hygiene applies"
+
+  # Own + active — MCP servers / hooks running in current Claude session
+  adit-code:     { tier: active }
+  be-my-geminis: { tier: active }
+  defn:          { tier: active }
+  gemot:         { tier: active }
+  hindcast:  { tier: active }
+  hybrid:    { tier: active }
+  lucida:    { tier: active }
+  plancheck: { tier: active }
+  slimemold: { tier: active }
+  weir:      { tier: active }
+
+  # Own + active — recent green CI, in regular rotation
+  drivermap:   { tier: active }
+  gemotvis:    { tier: active }
+  ismyaialive: { tier: active }
+  score:       { tier: active }
+
+  # Maintained — shipped, working, low-touch (no dependabot/auto-merge nag)
+  claude-mv: { tier: maintained }
+  effigy:    { tier: maintained }
+  groupchat: { tier: maintained }
+
+  # POC — incomplete, returning later
+  winze: { tier: demo, notes: "POC, doesn't fully work yet — returning soon" }
+
+  # Profile readme
+  justinstimatze:
+    fork_relation: profile
+    tier: maintained

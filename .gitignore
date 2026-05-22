@@ -1,0 +1,23 @@
+# compiled binary
+/vidette
+
+# defn MCP server runtime state
+/.defn/
+
+# scratch
+/tmp/
+*.log
+
+# session resume notes — transient
+/RESUME.md
+
+# local overlay for private-repo entries — never commit
+/vidette.local.yml
+
+# editor / OS cruft
+*.swp
+*.swo
+*~
+.DS_Store
+.idea/
+.vscode/
