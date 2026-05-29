@@ -42,6 +42,7 @@ repos:
 
   # Own + active — recent green CI, in regular rotation
   drivermap:   { tier: active }
+  flock:       { tier: active }
   gemotvis:    { tier: active }
   ismyaialive: { tier: active }
   score:       { tier: active }
