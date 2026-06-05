@@ -154,6 +154,16 @@ func HasBranchProtection(repo, branch string) (bool, error) {
 	return ok, err
 }
 
+// DependabotAlertsEnabled reports whether GitHub's Dependabot vulnerability
+// alerts setting is on for the repo. This is the repo-settings toggle,
+// independent of whether .github/dependabot.yml exists — a repo can have the
+// config file present and still have alerts off. The probe matches the gh API
+// contract: 204 No Content → enabled, 404 → disabled.
+func DependabotAlertsEnabled(repo string) (bool, error) {
+	_, ok, err := ghAPI(fmt.Sprintf("repos/%s/vulnerability-alerts", repo))
+	return ok, err
+}
+
 type CIRun struct {
 	Conclusion string `json:"conclusion"`
 	Status     string `json:"status"`

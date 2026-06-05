@@ -195,6 +195,27 @@ func AuditRepo(repo string, rc RepoConfig) RepoAudit {
 		}
 	}
 
+	// Dependabot alerts — settings-level toggle, independent of the config
+	// file. A repo can have .github/dependabot.yml present and still have
+	// alerts disabled at the repo-settings level (and vice-versa). Same
+	// surface gate as the dependabot check: only nag active repos with a
+	// package ecosystem or workflows to actually be alerted about.
+	if required(rule{requiredFor: ownAndRewritten, tierFloor: TierActive}, rc) {
+		if !repoHasDependabotSurface(repo) {
+			a.Checks = append(a.Checks, Check{"alerts", SevSkip, "no package manifests or workflows"})
+		} else {
+			enabled, err := DependabotAlertsEnabled(repo)
+			switch {
+			case err != nil:
+				a.Checks = append(a.Checks, Check{"alerts", SevWarn, "probe error: " + err.Error()})
+			case enabled:
+				a.Checks = append(a.Checks, Check{"alerts", SevOK, ""})
+			default:
+				a.Checks = append(a.Checks, Check{"alerts", SevFail, "Dependabot vulnerability alerts disabled"})
+			}
+		}
+	}
+
 	// Auto-merge — velocity check, only nag active repos
 	if required(rule{requiredFor: ownAndRewritten, tierFloor: TierActive}, rc) {
 		if meta.AllowAutoMerge {

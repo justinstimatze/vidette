@@ -156,6 +156,13 @@ func buildFix(a RepoAudit, c Check, stats FleetStats, defaults Defaults) FixActi
 			Plan:  "write .github/dependabot.yml (detect ecosystem from repo languages)",
 			Apply: func() error { return fixDependabot(a.Repo, defaults.MergeStrategy) },
 		}
+	case "alerts":
+		return FixAction{
+			Repo:  a.Repo,
+			Check: c.Name,
+			Plan:  "PUT repos/" + a.Repo + "/vulnerability-alerts (+ automated-security-fixes)",
+			Apply: func() error { return fixDependabotAlerts(a.Repo) },
+		}
 	case "branch-protection":
 		enforceAdmins := false
 		if defaults.EnforceAdmins != nil {
@@ -486,6 +493,21 @@ func rankedTopics(counts map[string]int) []string {
 
 func fixAutoMerge(repo string) error {
 	cmd := exec.Command("gh", "api", "-X", "PATCH", "repos/"+repo, "-F", "allow_auto_merge=true")
+	return runWithStderr(cmd)
+}
+
+// fixDependabotAlerts enables both the vulnerability-alerts toggle (so GitHub
+// surfaces advisory matches against the repo's manifests) and the companion
+// automated-security-fixes toggle (so Dependabot can auto-open PRs for the
+// alerts). Both PUTs are idempotent — no-op when already enabled. The second
+// PUT requires the first to have succeeded; if vulnerability-alerts fails we
+// surface that error and skip automated-security-fixes (it would also fail).
+func fixDependabotAlerts(repo string) error {
+	cmd := exec.Command("gh", "api", "-X", "PUT", "repos/"+repo+"/vulnerability-alerts")
+	if err := runWithStderr(cmd); err != nil {
+		return err
+	}
+	cmd = exec.Command("gh", "api", "-X", "PUT", "repos/"+repo+"/automated-security-fixes")
 	return runWithStderr(cmd)
 }
 
