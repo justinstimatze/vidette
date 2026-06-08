@@ -27,6 +27,10 @@ repos:
     fork_relation: rewritten
     tier: active
     notes: "fork-as-credit; full hygiene applies"
+  mcp-dispatch:
+    fork_relation: rewritten
+    tier: active
+    notes: "dispatch MCP server; fork lineage detached, own work — full hygiene applies"
 
   # Own + active — MCP servers / hooks running in current Claude session
   adit-code:     { tier: active }
@@ -41,6 +45,7 @@ repos:
   weir:      { tier: active }
 
   # Own + active — recent green CI, in regular rotation
+  calque:      { tier: active }
   drivermap:   { tier: active }
   flock:       { tier: active }
   gemotvis:    { tier: active }
