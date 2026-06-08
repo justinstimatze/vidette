@@ -1,0 +1,13 @@
+# Example systemd *user* service for the fleet watcher.
+# Install: copy to ~/.config/systemd/user/, replacing the two paths below.
+[Unit]
+Description=vidette fleet audit — notify on any failing repo
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Put your Go toolchain dir first if you want the build-if-missing fallback;
+# gh must be on PATH (usually /usr/bin) for the audit probes.
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=%h/path/to/vidette/scripts/fleet-watch.sh

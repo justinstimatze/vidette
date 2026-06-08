@@ -135,11 +135,24 @@ For an `own`, `active` repository, vidette performs the following acts of attent
 | branch-protection | PUT minimal protection: block force-push, block deletion. Nothing more |
 | security-policy | Write `SECURITY.md`, with maintainer email and a 90-day disclosure window |
 | archive-state | Bidirectional drift detection: tier=archived but live, or archived but tier ≠ archived |
-| ci | The latest push-event workflow run: flagged when failing or growing stale |
+| ci | The latest push-event workflow run: flagged when failing or growing stale. A failure reports how long it has *actually* been red — the streak of consecutive failures of that same workflow back to its last success (`failing 39d (Markdown Links)`), not the age of the newest run |
 | homepage | Fires only when notes mention a URL, or when `homepage:` is set explicitly |
 | upstream-sync | For tracking forks: how many commits behind the parent's default branch |
 
 When a file write hits HTTP 409 because of branch protection or repository rulesets, vidette falls back transparently to a `vidette/<slug>-<unix>` feature branch, opens a pull request, and enables auto-merge with squash. Subsequent runs are idempotent — if a vidette PR is already open for that file, vidette does not open a second one.
+
+## Scheduling
+
+An audit you run by hand is an audit that does not run. A check can rot red for weeks before anyone types the command. `scripts/fleet-watch.sh` closes that gap: it runs `vidette audit`, writes the report to `$XDG_STATE_HOME/vidette/last-audit.md`, and raises a `notify-send` desktop alert if any repository is failing. It is repo-relative and machine-path-free, so it survives this repo going public.
+
+Drive it from a scheduler. Example systemd *user* units live in `scripts/systemd/` — copy them to `~/.config/systemd/user/`, point `ExecStart` at the script, then:
+
+```bash
+systemctl --user daemon-reload
+systemctl --user enable --now vidette-watch.timer
+```
+
+`Persistent=true` reruns a missed audit at next login, so a machine that was off at the scheduled hour does not produce a silent skip. A plain cron line works just as well, provided `DBUS_SESSION_BUS_ADDRESS` is set so `notify-send` can reach your session.
 
 ## Status
 

@@ -1,0 +1,14 @@
+# Example systemd *user* timer for the fleet watcher.
+# Install: copy to ~/.config/systemd/user/, then:
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now vidette-watch.timer
+[Unit]
+Description=Daily vidette fleet audit
+
+[Timer]
+OnCalendar=*-*-* 09:00:00
+# Run on next boot/login if the machine was off at the scheduled time.
+Persistent=true
+
+[Install]
+WantedBy=timers.target
