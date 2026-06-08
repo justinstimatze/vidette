@@ -165,30 +165,76 @@ func DependabotAlertsEnabled(repo string) (bool, error) {
 }
 
 type CIRun struct {
+	Name       string `json:"name"` // workflow name, e.g. "Tests" / "Markdown Links"
 	Conclusion string `json:"conclusion"`
 	Status     string `json:"status"`
 	CreatedAt  string `json:"created_at"`
 }
 
+// ciStreakScan is how many recent push runs LatestCIRun pulls when measuring a
+// failure streak. The runs endpoint interleaves every workflow, so a repo with
+// N workflows yields ~N runs per push; 100 keeps a useful window of pushes
+// without paginating.
+const ciStreakScan = 100
+
 // LatestCIRun returns the most recent push-event workflow run on the given
 // branch, or nil if there are none. Filtering to event=push avoids picking up
 // pull_request runs (which can have action_required status from external
 // contributors and confuse the audit about the actual main-branch state).
-func LatestCIRun(repo, branch string) (*CIRun, error) {
-	body, ok, err := ghAPI(fmt.Sprintf("repos/%s/actions/runs?per_page=1&branch=%s&event=push", repo, branch))
+//
+// When the latest run is failing, streakStart is the created_at of the oldest
+// consecutive failure of that *same workflow* (walking back to its last
+// success) — so callers can report how long the failure has actually persisted
+// rather than the age of the newest run. capped is true when no prior success
+// was found inside the scan window, making streakStart a lower bound. For a
+// passing or in-progress latest run, streakStart == latest.CreatedAt.
+func LatestCIRun(repo, branch string) (latest *CIRun, streakStart string, capped bool, err error) {
+	body, ok, err := ghAPI(fmt.Sprintf("repos/%s/actions/runs?per_page=%d&branch=%s&event=push", repo, ciStreakScan, branch))
 	if err != nil || !ok {
-		return nil, err
+		return nil, "", false, err
 	}
 	var wrap struct {
 		Runs []CIRun `json:"workflow_runs"`
 	}
 	if err := json.Unmarshal(body, &wrap); err != nil {
-		return nil, fmt.Errorf("parse runs: %w", err)
+		return nil, "", false, fmt.Errorf("parse runs: %w", err)
 	}
 	if len(wrap.Runs) == 0 {
-		return nil, nil
+		return nil, "", false, nil
 	}
-	return &wrap.Runs[0], nil
+	latest = &wrap.Runs[0]
+	streakStart, capped = failureStreakStart(wrap.Runs)
+	return latest, streakStart, capped, nil
+}
+
+// failureStreakStart measures how long the latest run's failure has persisted.
+// runs is the push-run list newest-first across all workflows. If the newest
+// run is passing or in progress, it returns that run's timestamp and capped
+// false. Otherwise it walks the same-workflow runs back to the last success and
+// returns the created_at of the oldest consecutive failure; capped is true when
+// no earlier success exists in the window (the streak is a lower bound). Pure
+// over its input so the streak logic is unit-testable without the network.
+func failureStreakStart(runs []CIRun) (streakStart string, capped bool) {
+	if len(runs) == 0 {
+		return "", false
+	}
+	latest := runs[0]
+	streakStart = latest.CreatedAt
+	// Only failing states have a meaningful "how long".
+	if latest.Conclusion == "success" || latest.Conclusion == "" {
+		return streakStart, false
+	}
+	capped = true // assume no earlier success until we find one
+	for _, r := range runs {
+		if r.Name != latest.Name {
+			continue
+		}
+		if r.Conclusion == "success" {
+			return streakStart, false
+		}
+		streakStart = r.CreatedAt // oldest same-workflow failure seen so far
+	}
+	return streakStart, capped
 }
 
 // CompareUpstream returns commits-behind for a tracking fork's default branch

@@ -282,20 +282,30 @@ func AuditRepo(repo string, rc RepoConfig) RepoAudit {
 	// CI health — skip for scratch/archived. Broken CI on a frozen or
 	// throwaway repo is not actionable signal.
 	if required(rule{requiredFor: allExceptSnap, tierFloor: TierDemo}, rc) {
-		run, err := LatestCIRun(repo, meta.DefaultBranch)
+		run, streakStart, capped, err := LatestCIRun(repo, meta.DefaultBranch)
 		if err != nil {
 			a.Checks = append(a.Checks, Check{"ci", SevWarn, "probe error: " + err.Error()})
 		} else if run == nil {
 			a.Checks = append(a.Checks, Check{"ci", SevInfo, "no runs"})
 		} else {
 			age := ciAge(run.CreatedAt)
+			// streak is how long the current failure has persisted (oldest
+			// consecutive failure of the same workflow); "≥" when the last
+			// success predates the scan window.
+			streak := ciAge(streakStart)
+			since := func() string {
+				if capped {
+					return fmt.Sprintf("≥%dd", streak)
+				}
+				return fmt.Sprintf("%dd", streak)
+			}
 			switch run.Conclusion {
 			case "success":
 				a.Checks = append(a.Checks, Check{"ci", SevOK, fmt.Sprintf("green, %dd ago", age)})
 			case "failure":
-				a.Checks = append(a.Checks, Check{"ci", SevFail, fmt.Sprintf("failing %dd", age)})
+				a.Checks = append(a.Checks, Check{"ci", SevFail, fmt.Sprintf("failing %s (%s)", since(), run.Name)})
 			case "action_required":
-				a.Checks = append(a.Checks, Check{"ci", SevFail, fmt.Sprintf("action_required %dd", age)})
+				a.Checks = append(a.Checks, Check{"ci", SevFail, fmt.Sprintf("action_required %s (%s)", since(), run.Name)})
 			case "":
 				a.Checks = append(a.Checks, Check{"ci", SevInfo, fmt.Sprintf("in progress (%s)", run.Status)})
 			default:
