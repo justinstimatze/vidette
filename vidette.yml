@@ -45,12 +45,15 @@ repos:
   weir:      { tier: active }
 
   # Own + active — recent green CI, in regular rotation
+  basanite:    { tier: active, notes: "vocabulary-tic detector over CC transcripts" }
   calque:      { tier: active }
+  crystal:     { tier: active, notes: "deterministic-tier offload behind a verifier gate" }
   drivermap:   { tier: active }
   flock:       { tier: active }
   gemotvis:    { tier: active }
   ismyaialive: { tier: active }
   score:       { tier: active }
+  stull:       { tier: active, notes: "CC hooks as guarded state machines, compiled to settings.json" }
 
   # Maintained — shipped, working, low-touch (no dependabot/auto-merge nag)
   claude-mv: { tier: maintained }
