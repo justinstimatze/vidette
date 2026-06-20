@@ -84,14 +84,18 @@ func usage() {
 	fmt.Fprintf(os.Stderr, `vidette %s — scout your GitHub repo fleet for config drift
 
 usage:
-  vidette audit   [-config FILE] [-o FILE] [-p N] [-v]  read-only audit, emit markdown
-  vidette plan    [-config FILE] [-p N] [-v]            dry-run: show what apply would do
-  vidette apply   [-config FILE] [-p N] [-v]            execute the plan (mutates GitHub)
-  vidette suggest [-config FILE] [-v]                   emit per-repo evidence prompt for tier classification
-  vidette version                                       print version
+  vidette audit   [-config FILE] [-o FILE] [-p N] [-repo A,B] [-v]  read-only audit, emit markdown
+  vidette plan    [-config FILE] [-p N] [-repo A,B] [-v]            dry-run: show what apply would do
+  vidette apply   [-config FILE] [-p N] [-repo A,B] [-v]            execute the plan (mutates GitHub)
+  vidette suggest [-config FILE] [-v]                               emit per-repo evidence prompt for tier classification
+  vidette version                                                   print version
 
 flags:
-  -v   verbose: log per-repo progress to stderr
+  -repo  comma-separated repo names to scope to (default: whole fleet)
+  -v     verbose: log per-repo progress to stderr
+
+plan/apply only act on repos explicitly classified in the config; unconfigured
+repos (in the fleet but not in vidette.yml) are audit-only until you classify them.
 `, displayVersion())
 }
 
@@ -100,13 +104,14 @@ func cmdAudit(args []string) {
 	configPath := fs.String("config", "vidette.yml", "path to config")
 	outPath := fs.String("o", "", "output path (default: stdout)")
 	parallel := fs.Int("p", 6, "parallel repo audits")
+	repoFlag := fs.String("repo", "", "comma-separated repo names to scope to (default: whole fleet)")
 	v := fs.Bool("v", false, "verbose: log per-repo progress")
 	_ = fs.Parse(args)
 	verbose = *v
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-	_, audits, unconfigured, missing := loadAndAudit(ctx, *configPath, *parallel)
+	_, audits, unconfigured, missing := loadAndAudit(ctx, *configPath, *parallel, splitRepoFlag(*repoFlag))
 
 	out := os.Stdout
 	if *outPath != "" {
@@ -148,6 +153,7 @@ func cmdApply(args []string, doApply bool) {
 	fs := flag.NewFlagSet(name, flag.ExitOnError)
 	configPath := fs.String("config", "vidette.yml", "path to config")
 	parallel := fs.Int("p", 6, "parallel repo audits")
+	repoFlag := fs.String("repo", "", "comma-separated repo names to scope to (default: whole fleet)")
 	v := fs.Bool("v", false, "verbose: log per-repo progress")
 	_ = fs.Parse(args)
 	verbose = *v
@@ -158,7 +164,31 @@ func cmdApply(args []string, doApply bool) {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	cfg, audits, _, _ := loadAndAudit(ctx, *configPath, *parallel)
+	cfg, audits, unconfigured, _ := loadAndAudit(ctx, *configPath, *parallel, splitRepoFlag(*repoFlag))
+
+	// plan/apply act only on repos explicitly classified in the config.
+	// Repos matched only by `defaults:` (i.e. unconfigured — present in the
+	// fleet but absent from vidette.yml) are audit-only: surfacing them is
+	// audit's job, mutating them is not. This is the fail-safe that stops a
+	// partial or empty config from fixing the whole fleet under default
+	// own/active. Classify a repo to opt it into plan/apply.
+	if len(unconfigured) > 0 {
+		skip := make(map[string]bool, len(unconfigured))
+		for _, r := range unconfigured {
+			skip[r] = true
+		}
+		kept := audits[:0]
+		for _, a := range audits {
+			if skip[strings.TrimPrefix(a.Repo, cfg.User+"/")] {
+				continue
+			}
+			kept = append(kept, a)
+		}
+		audits = kept
+		fmt.Fprintf(os.Stderr, "%s: skipping %d unconfigured repo(s) (audit-only until classified in %s): %s\n",
+			name, len(unconfigured), *configPath, strings.Join(unconfigured, ", "))
+	}
+
 	applied, failed := RunApply(os.Stdout, ctx, audits, cfg.Defaults, doApply)
 	if doApply {
 		fmt.Fprintf(os.Stderr, "\napplied: %d · failed: %d\n", applied, failed)
@@ -168,7 +198,7 @@ func cmdApply(args []string, doApply bool) {
 	}
 }
 
-func loadAndAudit(ctx context.Context, configPath string, parallel int) (*Config, []RepoAudit, []string, []string) {
+func loadAndAudit(ctx context.Context, configPath string, parallel int, repoFilter []string) (*Config, []RepoAudit, []string, []string) {
 	cfg, err := LoadConfig(configPath)
 	if err != nil {
 		die("config: %v", err)
@@ -183,7 +213,37 @@ func loadAndAudit(ctx context.Context, configPath string, parallel int) (*Config
 		die("list repos: %v", err)
 	}
 
+	// -repo scoping: restrict the fleet to an explicit, named subset. This is
+	// the safe way to act on one or a few repos — unlike trimming the config,
+	// which silently leaves every other repo at the defaults and (pre-#1) let
+	// apply mutate the whole fleet.
+	if len(repoFilter) > 0 {
+		want := make(map[string]bool, len(repoFilter))
+		for _, r := range repoFilter {
+			want[strings.TrimSpace(r)] = true
+		}
+		filtered := fleet[:0]
+		for _, repo := range fleet {
+			if want[strings.TrimPrefix(repo, cfg.User+"/")] {
+				filtered = append(filtered, repo)
+			}
+		}
+		for _, repo := range filtered {
+			delete(want, strings.TrimPrefix(repo, cfg.User+"/"))
+		}
+		for r := range want {
+			fmt.Fprintf(os.Stderr, "warning: -repo %q not found in fleet — skipping\n", r)
+		}
+		fleet = filtered
+	}
+
 	unconfigured, missing := diffRepos(fleet, cfg, cfg.User)
+	if len(repoFilter) > 0 {
+		// "Configured but not in fleet" is computed against the (now narrowed)
+		// fleet, so under -repo every other classified repo would falsely look
+		// missing. The diagnostic only makes sense for a whole-fleet run.
+		missing = nil
+	}
 
 	// Drop repos marked ignore:true before auditing — they stay "configured"
 	// (so they don't show up in unconfigured), they just aren't probed.
@@ -228,6 +288,21 @@ func loadAndAudit(ctx context.Context, configPath string, parallel int) (*Config
 		fmt.Fprintf(os.Stderr, "audit interrupted: %s — partial results follow\n", err)
 	}
 	return cfg, audits, unconfigured, missing
+}
+
+// splitRepoFlag parses the comma-separated -repo value into a clean name list.
+// Empty input means "no filter" (whole fleet).
+func splitRepoFlag(s string) []string {
+	if strings.TrimSpace(s) == "" {
+		return nil
+	}
+	var out []string
+	for _, p := range strings.Split(s, ",") {
+		if p = strings.TrimSpace(p); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 func die(format string, args ...any) {

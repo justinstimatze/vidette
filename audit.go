@@ -45,6 +45,7 @@ type RepoAudit struct {
 	Tier           Tier
 	Notes          string
 	HomepageTarget string // resolved target URL or "" if no target / suppressed
+	IsFork         bool   // GitHub's fork bit — drives the config-independent fork backstop in buildFix
 	Checks         []Check
 	FetchErr       error
 }
@@ -116,6 +117,7 @@ func AuditRepo(repo string, rc RepoConfig) RepoAudit {
 		a.FetchErr = err
 		return a
 	}
+	a.IsFork = meta.IsFork
 
 	// Profile readme repos (user/user) are special — no license, no PR flow,
 	// no CI; just confirm the default branch and move on.

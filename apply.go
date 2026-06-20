@@ -115,6 +115,21 @@ func checkOrder(name string) int {
 }
 
 func buildFix(a RepoAudit, c Check, stats FleetStats, defaults Defaults) FixAction {
+	// Config-independent fork backstop: never write own-hygiene FILES (which
+	// land as commits) to a repo GitHub reports as a fork, unless it's been
+	// explicitly reclassified as a fork-as-credit rewrite. This keeps
+	// tracking/snapshot forks from being diverged from upstream — and from
+	// getting our LICENSE stamped onto someone else's code — even when the
+	// config misclassifies the fork (e.g. a partial config leaving it at the
+	// default `own`). Settings-only fixes (alerts, auto-merge, branch-protection,
+	// topics) don't diverge a fork, so they're left to the normal tier logic.
+	if a.IsFork && a.ForkRelation != FRelRewritten {
+		switch c.Name {
+		case "license", "dependabot", "security-policy":
+			return FixAction{Repo: a.Repo, Check: c.Name, NoFix: true,
+				Reason: "fork: refusing to commit " + c.Name + " — would diverge from upstream (set fork_relation: rewritten to override)"}
+		}
+	}
 	switch c.Name {
 	case "license":
 		if stats.ModalLicense == "" {

@@ -141,6 +141,14 @@ For an `own`, `active` repository, vidette performs the following acts of attent
 
 When a file write hits HTTP 409 because of branch protection or repository rulesets, vidette falls back transparently to a `vidette/<slug>-<unix>` feature branch, opens a pull request, and enables auto-merge with squash. Subsequent runs are idempotent — if a vidette PR is already open for that file, vidette does not open a second one.
 
+## What apply will and will not touch
+
+`apply` mutates GitHub, so it errs toward doing nothing surprising:
+
+- **Only classified repos are mutated.** A repository present in your fleet but absent from `vidette.yml` (and its overlay) is *audit-only*: `audit` lists it under "Unconfigured repos", but `plan` and `apply` skip it and say so on stderr. The config is not a filter layered over a default-fix-everything pass — it is the allowlist. A partial or empty config fixes nothing; it does not fall through to `defaults` and repair the whole fleet.
+- **Forks are never diverged.** Independent of how the config classifies it, vidette refuses to *commit* files (`LICENSE`, `dependabot.yml`, `SECURITY.md`) to any repository GitHub reports as a fork — those commits would diverge it from upstream, and a `LICENSE` would stamp your terms onto someone else's code. To opt a fork into full hygiene (fork-as-credit you have rewritten), set `fork_relation: rewritten`. Settings-only fixes still apply.
+- **Scope to a subset with `-repo`.** `vidette apply -repo a,b,c` restricts the run to named repositories. This is the correct way to act on one repo — never trim the config to "scope" a run.
+
 ## Scheduling
 
 An audit you run by hand is an audit that does not run. A check can rot red for weeks before anyone types the command. `scripts/fleet-watch.sh` closes that gap: it runs `vidette audit`, writes the report to `$XDG_STATE_HOME/vidette/last-audit.md`, and raises a `notify-send` desktop alert if any repository is failing. It is repo-relative and machine-path-free, so it survives this repo going public.

@@ -5,6 +5,81 @@ import (
 	"testing"
 )
 
+// TestForkBackstop verifies that buildFix refuses to commit own-hygiene files
+// to a repo GitHub reports as a fork, independent of how the config classifies
+// it — the config-independent safety net that would have prevented diverging
+// the tracking forks during a mass apply. Settings-only fixes stay allowed, and
+// an explicit `rewritten` reclassification overrides the block.
+func TestForkBackstop(t *testing.T) {
+	stats := FleetStats{ModalLicense: "MIT"}
+	defaults := Defaults{SecurityEmail: "x@example.com", CopyrightHolder: "me"}
+
+	fileCommitChecks := []string{"license", "dependabot", "security-policy"}
+	settingChecks := []string{"alerts", "auto-merge", "branch-protection"}
+
+	// A fork left at the default `own` (the misclassification that bit us):
+	// file-commit fixes must be refused, settings fixes must still apply.
+	fork := RepoAudit{Repo: "me/somefork", IsFork: true, ForkRelation: FRelOwn}
+	for _, name := range fileCommitChecks {
+		act := buildFix(fork, Check{Name: name, Severity: SevFail}, stats, defaults)
+		if !act.NoFix {
+			t.Errorf("fork %q: expected NoFix (backstop), got fixable", name)
+		}
+		if !strings.Contains(act.Reason, "fork") {
+			t.Errorf("fork %q: reason %q should mention fork", name, act.Reason)
+		}
+	}
+	for _, name := range settingChecks {
+		act := buildFix(fork, Check{Name: name, Severity: SevFail}, stats, defaults)
+		if act.NoFix {
+			t.Errorf("fork %q: settings fix should be allowed on a fork, got NoFix (%s)", name, act.Reason)
+		}
+	}
+
+	// `rewritten` (fork-as-credit, full hygiene) overrides the backstop.
+	rewritten := RepoAudit{Repo: "me/credit", IsFork: true, ForkRelation: FRelRewritten}
+	for _, name := range fileCommitChecks {
+		act := buildFix(rewritten, Check{Name: name, Severity: SevFail}, stats, defaults)
+		if act.NoFix {
+			t.Errorf("rewritten fork %q: expected fixable (override), got NoFix (%s)", name, act.Reason)
+		}
+	}
+
+	// Non-fork repo: file-commit fixes are unaffected by the backstop.
+	own := RepoAudit{Repo: "me/own", IsFork: false, ForkRelation: FRelOwn}
+	for _, name := range fileCommitChecks {
+		act := buildFix(own, Check{Name: name, Severity: SevFail}, stats, defaults)
+		if act.NoFix {
+			t.Errorf("non-fork %q: expected fixable, got NoFix (%s)", name, act.Reason)
+		}
+	}
+}
+
+func TestSplitRepoFlag(t *testing.T) {
+	cases := []struct {
+		in   string
+		want []string
+	}{
+		{"", nil},
+		{"   ", nil},
+		{"a", []string{"a"}},
+		{"a,b , c", []string{"a", "b", "c"}},
+		{"a,,b,", []string{"a", "b"}},
+	}
+	for _, tc := range cases {
+		got := splitRepoFlag(tc.in)
+		if len(got) != len(tc.want) {
+			t.Errorf("splitRepoFlag(%q) = %v, want %v", tc.in, got, tc.want)
+			continue
+		}
+		for i := range got {
+			if got[i] != tc.want[i] {
+				t.Errorf("splitRepoFlag(%q)[%d] = %q, want %q", tc.in, i, got[i], tc.want[i])
+			}
+		}
+	}
+}
+
 func TestFirstProseLine(t *testing.T) {
 	cases := []struct {
 		name string
