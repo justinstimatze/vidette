@@ -21,6 +21,10 @@ repos:
     fork_relation: snapshot
     tier: scratch
     notes: "tentative — confirm classification"
+  aipotluck.org:
+    fork_relation: tracking
+    tier: maintained
+    notes: "fork of currentai-org/aipotluck.org; track upstream, no own work"
 
   # Fork-as-credit rewrite — full hygiene applies
   gozim:
