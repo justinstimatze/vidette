@@ -56,6 +56,7 @@ repos:
   flock:       { tier: active }
   gemotvis:    { tier: active }
   ismyaialive: { tier: active }
+  leat:        { tier: active, notes: "git-as-transport library; canonical Go impl of the mcp-dispatch wire contract" }
   score:       { tier: active }
   stull:       { tier: active, notes: "CC hooks as guarded state machines, compiled to settings.json" }
 
