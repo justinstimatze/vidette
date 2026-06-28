@@ -55,6 +55,7 @@ repos:
   drivermap:   { tier: active }
   flock:       { tier: active }
   gemotvis:    { tier: active }
+  gusset:      { tier: active, notes: "P2P Firefox extension-settings sync: daemon + signed WebExtension" }
   ismyaialive: { tier: active }
   leat:        { tier: active, notes: "git-as-transport library; canonical Go impl of the mcp-dispatch wire contract" }
   score:       { tier: active }
