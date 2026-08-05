@@ -44,6 +44,7 @@ repos:
   hindcast:  { tier: active }
   hybrid:    { tier: active }
   lucida:    { tier: active }
+  nowcast:   { tier: active, notes: "prompt-cache TTL warner; squashed history, vidette active-tier defaults applied" }
   plancheck: { tier: active }
   slimemold: { tier: active }
   weir:      { tier: active }
