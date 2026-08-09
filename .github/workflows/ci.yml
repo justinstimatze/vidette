@@ -34,6 +34,14 @@ jobs:
       - name: go vet
         run: go vet ./...
 
+      # staticcheck, pinned: @latest would let an upstream release turn an
+      # unrelated PR red.
+      - name: install staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@v0.7.0
+
+      - name: staticcheck
+        run: staticcheck ./...
+
       - name: go test (race)
         run: go test -race ./...
 
