@@ -39,6 +39,7 @@ repos:
   # Own + active — MCP servers / hooks running in current Claude session
   adit-code:     { tier: active }
   be-my-geminis: { tier: active }
+  capitulant:    { tier: active, notes: "premature-impossibility detection for AI agents; prototype text classifier + literature review, eval/ has a working scorer" }
   defn:          { tier: active }
   gemot:         { tier: active }
   hindcast:  { tier: active }
