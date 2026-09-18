@@ -89,13 +89,13 @@ repos:
   ticketvoice: { tier: active, notes: "gates ticket prose through cope + basanite before posting" }
 
   # Maintained — full-fleet sweep, 2026-09-18
-  couloir: { tier: maintained, notes: "AI-coding-maturity calibrator; shipped, went public 2026-08-30" }
-  rtux:    { tier: maintained, notes: "reversible memory-pressure daemon for Linux desktops" }
-  twip:    { tier: maintained, notes: "vector-timeline .wick -> .swf compiler for Ruffle" }
+  couloir:  { tier: maintained, notes: "AI-coding-maturity calibrator; shipped, went public 2026-08-30" }
+  pellicle: { tier: maintained, notes: "session status-report writer; hooks-based (5 status-*.sh scripts), single squashed commit, working" }
+  rtux:     { tier: maintained, notes: "reversible memory-pressure daemon for Linux desktops" }
+  twip:     { tier: maintained, notes: "vector-timeline .wick -> .swf compiler for Ruffle" }
 
   # Scratch — full-fleet sweep, 2026-09-18
-  pellicle: { tier: scratch, notes: "session status-report writer; MCP server currently failing to connect (ENOENT, binary missing) — confirm before promoting" }
-  spar:     { tier: scratch, notes: "code-review sparring partner; plants a synthetic bug and checks whether you catch it" }
+  spar: { tier: scratch, notes: "code-review sparring partner; plants a synthetic bug and checks whether you catch it" }
 
   # Profile readme
   justinstimatze:
