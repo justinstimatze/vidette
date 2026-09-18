@@ -21,10 +21,18 @@ repos:
     fork_relation: snapshot
     tier: scratch
     notes: "tentative — confirm classification"
-  aipotluck.org:
-    fork_relation: tracking
-    tier: maintained
-    notes: "fork of currentai-org/aipotluck.org; track upstream, no own work"
+  AI_Diplomacy:
+    fork_relation: snapshot
+    tier: scratch
+    notes: "fork of GoodStartLabs/AI_Diplomacy, no own commits — tentative, confirm classification"
+  chat.publicai.co:
+    fork_relation: snapshot
+    tier: scratch
+    notes: "fork of forpublicai/chat.publicai.co, no own commits — tentative, confirm classification"
+  deeptutor:
+    fork_relation: snapshot
+    tier: scratch
+    notes: "fork of HKUDS/DeepTutor, no own commits — tentative, confirm classification"
 
   # Fork-as-credit rewrite — full hygiene applies
   gozim:
@@ -70,6 +78,24 @@ repos:
 
   # POC — incomplete, returning later
   winze: { tier: demo, notes: "POC, doesn't fully work yet — returning soon" }
+
+  # Own + active — full-fleet sweep, 2026-09-18
+  chit:        { tier: active, notes: "Go client/merchant library for ATXP (Agent Transaction Protocol)" }
+  costrel:     { tier: active, notes: "bounded-consultant discipline for costly mid-task model calls; backs the costrel-consultant subagent" }
+  keyway:      { tier: active, notes: "SessionStart/PostModelSwitch hook injecting model- and project-specific CLAUDE.md content" }
+  pennon:      { tier: active, notes: "agent identity for Linear (actor=app, not a personal token)" }
+  resection:   { tier: active, notes: "vision-vs-implementation drift audit; backs the resection-implementation-reader/resection-vision-reader subagents" }
+  robotsyes:   { tier: active, notes: "reverse proxy for content negotiation, bulk export, bot identity, rate limits" }
+  ticketvoice: { tier: active, notes: "gates ticket prose through cope + basanite before posting" }
+
+  # Maintained — full-fleet sweep, 2026-09-18
+  couloir: { tier: maintained, notes: "AI-coding-maturity calibrator; shipped, went public 2026-08-30" }
+  rtux:    { tier: maintained, notes: "reversible memory-pressure daemon for Linux desktops" }
+  twip:    { tier: maintained, notes: "vector-timeline .wick -> .swf compiler for Ruffle" }
+
+  # Scratch — full-fleet sweep, 2026-09-18
+  pellicle: { tier: scratch, notes: "session status-report writer; MCP server currently failing to connect (ENOENT, binary missing) — confirm before promoting" }
+  spar:     { tier: scratch, notes: "code-review sparring partner; plants a synthetic bug and checks whether you catch it" }
 
   # Profile readme
   justinstimatze:
