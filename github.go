@@ -71,9 +71,10 @@ type RepoMeta struct {
 	License       *struct {
 		SPDXID string `json:"spdx_id"`
 	} `json:"license"`
-	AllowAutoMerge bool   `json:"allow_auto_merge"`
-	PushedAt       string `json:"pushed_at"`
-	Parent         *struct {
+	AllowAutoMerge            bool   `json:"allow_auto_merge"`
+	PullRequestCreationPolicy string `json:"pull_request_creation_policy"`
+	PushedAt                  string `json:"pushed_at"`
+	Parent                    *struct {
 		FullName      string `json:"full_name"`
 		DefaultBranch string `json:"default_branch"`
 	} `json:"parent"`

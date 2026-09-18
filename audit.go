@@ -227,6 +227,24 @@ func AuditRepo(repo string, rc RepoConfig) RepoAudit {
 		}
 	}
 
+	// Pull requests — hygiene/risk posture, not a velocity nag: applies down to
+	// TierDemo (broader than auto-merge/alerts) and includes tracking forks
+	// (nobody should be opening PRs against a tracking fork either). Excludes
+	// snapshot (tentative/scratch classification) and profile (no PR flow).
+	// collaborators_only, not has_pull_requests=false: the outright toggle makes
+	// EXISTING open PRs 404/unreachable and blocks Dependabot from opening new
+	// ones too (verified empirically against a real PR before choosing this).
+	// collaborators_only leaves the PR feature itself on — Dependabot still has
+	// repo-write access and isn't a stranger — and only blocks non-collaborator
+	// PR creation, which is the actual risk being managed.
+	if required(rule{requiredFor: allExceptSnap, tierFloor: TierDemo}, rc) {
+		if meta.PullRequestCreationPolicy == "collaborators_only" {
+			a.Checks = append(a.Checks, Check{"pull-requests", SevOK, ""})
+		} else {
+			a.Checks = append(a.Checks, Check{"pull-requests", SevFail, "open to non-collaborator PR creation"})
+		}
+	}
+
 	// Branch protection
 	if required(rule{requiredFor: ownAndRewritten, tierFloor: TierMaintained}, rc) {
 		has, err := HasBranchProtection(repo, meta.DefaultBranch)

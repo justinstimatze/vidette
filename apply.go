@@ -164,6 +164,13 @@ func buildFix(a RepoAudit, c Check, stats FleetStats, defaults Defaults) FixActi
 			Plan:  "PATCH repos/" + a.Repo + " allow_auto_merge=true",
 			Apply: func() error { return fixAutoMerge(a.Repo) },
 		}
+	case "pull-requests":
+		return FixAction{
+			Repo:  a.Repo,
+			Check: c.Name,
+			Plan:  "PATCH repos/" + a.Repo + " pull_request_creation_policy=collaborators_only",
+			Apply: func() error { return fixPullRequests(a.Repo) },
+		}
 	case "dependabot":
 		return FixAction{
 			Repo:  a.Repo,
@@ -508,6 +515,11 @@ func rankedTopics(counts map[string]int) []string {
 
 func fixAutoMerge(repo string) error {
 	cmd := exec.Command("gh", "api", "-X", "PATCH", "repos/"+repo, "-F", "allow_auto_merge=true")
+	return runWithStderr(cmd)
+}
+
+func fixPullRequests(repo string) error {
+	cmd := exec.Command("gh", "api", "-X", "PATCH", "repos/"+repo, "-F", "pull_request_creation_policy=collaborators_only")
 	return runWithStderr(cmd)
 }
 
