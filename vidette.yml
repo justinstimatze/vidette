@@ -87,6 +87,7 @@ repos:
   resection:   { tier: active, notes: "vision-vs-implementation drift audit; backs the resection-implementation-reader/resection-vision-reader subagents" }
   robotsyes:   { tier: active, notes: "reverse proxy for content negotiation, bulk export, bot identity, rate limits" }
   ticketvoice: { tier: active, notes: "gates ticket prose through cope + basanite before posting" }
+  linear-strict: { tier: active, notes: "unofficial Linear MCP server with server-side ticket rules; public 2026-09-27, installs from the release tarball" }
 
   # Maintained — full-fleet sweep, 2026-09-18
   couloir:  { tier: maintained, notes: "AI-coding-maturity calibrator; shipped, went public 2026-08-30" }
