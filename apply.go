@@ -514,13 +514,27 @@ func rankedTopics(counts map[string]int) []string {
 }
 
 func fixAutoMerge(repo string) error {
-	cmd := exec.Command("gh", "api", "-X", "PATCH", "repos/"+repo, "-F", "allow_auto_merge=true")
-	return runWithStderr(cmd)
+	return patchRepoSetting(repo, "-F", "allow_auto_merge", "true")
 }
 
 func fixPullRequests(repo string) error {
-	cmd := exec.Command("gh", "api", "-X", "PATCH", "repos/"+repo, "-F", "pull_request_creation_policy=collaborators_only")
-	return runWithStderr(cmd)
+	return patchRepoSetting(repo, "-f", "pull_request_creation_policy", "collaborators_only")
+}
+
+// patchRepoSetting PATCHes one repo field and checks the value GitHub sends back, since the PATCH can exit 0 while
+// the setting stays unchanged. flag is gh's -F (typed) or -f (string).
+func patchRepoSetting(repo, flag, field, want string) error {
+	cmd := exec.Command("gh", "api", "-X", "PATCH", "repos/"+repo, flag, field+"="+want, "--jq", "."+field+"|tostring")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("%w: %s", err, strings.TrimSpace(stderr.String()))
+	}
+	if got := strings.TrimSpace(string(out)); got != want {
+		return fmt.Errorf("%s is still %q after the PATCH, want %q", field, got, want)
+	}
+	return nil
 }
 
 // fixDependabotAlerts enables both the vulnerability-alerts toggle (so GitHub
