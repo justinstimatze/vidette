@@ -102,3 +102,13 @@ repos:
   justinstimatze:
     fork_relation: profile
     tier: maintained
+
+  # Own + active — went public 2026-10-18
+  afferent: { tier: active, notes: "local-first sensor pipeline (CO2, HRV, keystroke timing) exposing derived user state to Claude Code over MCP" }
+  efferent: { tier: active, notes: "actuator half of afferent: haptic vest, Hue, Launchpad, MIDImix mixer driven by agent + sensor state" }
+
+  # Own + active — went public 2026-10-23
+  because: { tier: active, notes: "known-cause hook for Claude Code: matches a table of causes against tool input, output and replies" }
+
+  # Own + active — went public 2026-11-19
+  tote: { tier: active, notes: "async Stop hook: checks each reply for guesses stated as fact and has the agent re-check them" }
